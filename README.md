@@ -26,8 +26,8 @@ A full-stack to-do task web application built with React, Node.js/Express, and P
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd todo-app
+git clone https://github.com/Shanth05/-todo-fullstack-app.git
+cd -todo-fullstack-app
 ```
 
 2. Start all services:
