@@ -2,9 +2,6 @@ import { pool } from '../config/database';
 import { Task, CreateTaskRequest, UpdateTaskRequest } from '../models/Task';
 
 export class TaskService {
-  /**
-   * Get the 5 most recent incomplete tasks
-   */
   async getRecentTasks(): Promise<Task[]> {
     const query = `
       SELECT id, title, description, completed, created_at, updated_at
@@ -18,9 +15,6 @@ export class TaskService {
     return result.rows;
   }
 
-  /**
-   * Create a new task
-   */
   async createTask(taskData: CreateTaskRequest): Promise<Task> {
     const { title, description } = taskData;
     
@@ -34,9 +28,6 @@ export class TaskService {
     return result.rows[0];
   }
 
-  /**
-   * Mark a task as completed
-   */
   async completeTask(id: number): Promise<Task | null> {
     const query = `
       UPDATE task
@@ -49,9 +40,6 @@ export class TaskService {
     return result.rows[0] || null;
   }
 
-  /**
-   * Get a task by ID
-   */
   async getTaskById(id: number): Promise<Task | null> {
     const query = `
       SELECT id, title, description, completed, created_at, updated_at
@@ -63,9 +51,6 @@ export class TaskService {
     return result.rows[0] || null;
   }
 
-  /**
-   * Update a task
-   */
   async updateTask(id: number, taskData: UpdateTaskRequest): Promise<Task | null> {
     const fields: string[] = [];
     const values: any[] = [];
@@ -104,12 +89,20 @@ export class TaskService {
     return result.rows[0] || null;
   }
 
-  /**
-   * Delete a task
-   */
   async deleteTask(id: number): Promise<boolean> {
     const query = 'DELETE FROM task WHERE id = $1';
     const result = await pool.query(query, [id]);
     return (result.rowCount || 0) > 0;
+  }
+
+  async checkTaskNameAvailability(title: string): Promise<boolean> {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM task
+      WHERE LOWER(title) = LOWER($1) AND completed = false
+    `;
+    
+    const result = await pool.query(query, [title]);
+    return parseInt(result.rows[0].count) === 0;
   }
 }

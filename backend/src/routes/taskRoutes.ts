@@ -7,6 +7,9 @@ const taskController = new TaskController();
 // GET /api/tasks - Get the 5 most recent incomplete tasks
 router.get('/', taskController.getRecentTasks);
 
+// GET /api/tasks/check-availability - Check if task name is available
+router.get('/check-availability', taskController.checkTaskNameAvailability);
+
 // POST /api/tasks - Create a new task
 router.post('/', taskController.createTaskValidation, taskController.createTask);
 

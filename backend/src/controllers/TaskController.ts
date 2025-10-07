@@ -10,9 +10,6 @@ export class TaskController {
     this.taskService = new TaskService();
   }
 
-  /**
-   * Validation rules for creating a task
-   */
   get createTaskValidation() {
     return [
       body('title')
@@ -26,10 +23,6 @@ export class TaskController {
         .withMessage('Description must be less than 1000 characters'),
     ];
   }
-
-  /**
-   * Get the 5 most recent incomplete tasks
-   */
   getRecentTasks = async (req: Request, res: Response): Promise<void> => {
     try {
       const tasks = await this.taskService.getRecentTasks();
@@ -47,12 +40,8 @@ export class TaskController {
     }
   };
 
-  /**
-   * Create a new task
-   */
   createTask = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         res.status(400).json({
@@ -84,9 +73,6 @@ export class TaskController {
     }
   };
 
-  /**
-   * Mark a task as completed
-   */
   completeTask = async (req: Request, res: Response): Promise<void> => {
     try {
       const taskId = parseInt(req.params.id);
@@ -123,9 +109,6 @@ export class TaskController {
     }
   };
 
-  /**
-   * Get a task by ID
-   */
   getTaskById = async (req: Request, res: Response): Promise<void> => {
     try {
       const taskId = parseInt(req.params.id);
@@ -154,6 +137,36 @@ export class TaskController {
       });
     } catch (error) {
       console.error('Error fetching task:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  };
+
+  checkTaskNameAvailability = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { title } = req.query;
+      
+      if (!title || typeof title !== 'string') {
+        res.status(400).json({
+          success: false,
+          message: 'Title is required'
+        });
+        return;
+      }
+
+      const isAvailable = await this.taskService.checkTaskNameAvailability(title.trim());
+      
+      res.json({
+        success: true,
+        data: {
+          available: isAvailable,
+          message: isAvailable ? 'Task name is available' : 'Task name already exists'
+        }
+      });
+    } catch (error) {
+      console.error('Error checking task name availability:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'

@@ -5,7 +5,7 @@ class MockDatabase {
   public tasks: Task[] = [];
   public nextId = 1;
 
-  async query(sql: string, params: any[] = []): Promise<{ rows: Task[]; rowCount?: number }> {
+  async query(sql: string, params: any[] = []): Promise<{ rows: any[]; rowCount?: number }> {
     console.log('Mock DB Query:', sql, params);
     
     if (sql.includes('SELECT') && sql.includes('WHERE completed = false')) {
@@ -54,6 +54,15 @@ class MockDatabase {
         return { rows: [], rowCount: 1 };
       }
       return { rows: [], rowCount: 0 };
+    }
+    
+    if (sql.includes('SELECT COUNT(*)') && sql.includes('WHERE LOWER(title) = LOWER')) {
+      const titleToCheck = params[0];
+      const count = this.tasks.filter(task => 
+        task.title.toLowerCase() === titleToCheck.toLowerCase() && 
+        !task.completed
+      ).length;
+      return { rows: [{ count: count.toString() }] };
     }
     
     return { rows: [] };

@@ -14,11 +14,36 @@ const App: React.FC = () => {
     title: '',
     description: '',
   });
+  const [titleValidation, setTitleValidation] = useState<{
+    isChecking: boolean;
+    isAvailable: boolean | null;
+    message: string;
+  }>({
+    isChecking: false,
+    isAvailable: null,
+    message: '',
+  });
 
-  // Load tasks on component mount
   useEffect(() => {
     loadTasks();
   }, []);
+
+  // Debounced validation function
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (formData.title.trim().length > 0) {
+        checkTaskNameAvailability(formData.title.trim());
+      } else {
+        setTitleValidation({
+          isChecking: false,
+          isAvailable: null,
+          message: '',
+        });
+      }
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.title]);
 
   const loadTasks = async () => {
     try {
@@ -33,11 +58,35 @@ const App: React.FC = () => {
     }
   };
 
+  const checkTaskNameAvailability = async (title: string) => {
+    try {
+      setTitleValidation(prev => ({ ...prev, isChecking: true }));
+      const result = await taskApi.checkTaskNameAvailability(title);
+      setTitleValidation({
+        isChecking: false,
+        isAvailable: result.available,
+        message: result.message,
+      });
+    } catch (error) {
+      console.error('Error checking task name availability:', error);
+      setTitleValidation({
+        isChecking: false,
+        isAvailable: null,
+        message: 'Error checking availability',
+      });
+    }
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title.trim()) {
       toast.error('Title is required');
+      return;
+    }
+
+    if (titleValidation.isAvailable === false) {
+      toast.error('Task name already exists. Please choose a different name.');
       return;
     }
 
@@ -49,6 +98,11 @@ const App: React.FC = () => {
       });
       setTasks(prevTasks => [newTask, ...prevTasks.slice(0, 4)]);
       setFormData({ title: '', description: '' });
+      setTitleValidation({
+        isChecking: false,
+        isAvailable: null,
+        message: '',
+      });
       toast.success('Task created successfully!');
     } catch (error: any) {
       console.error('Error creating task:', error);
@@ -83,21 +137,43 @@ const App: React.FC = () => {
 
         <main className="app-main">
           <div className="app-content">
-            {/* Add Task Form */}
             <div className="task-form">
               <h2>Add a Task</h2>
               <form onSubmit={handleCreateTask}>
                 <div className="form-group">
                   <label htmlFor="title">Title *</label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Enter task title..."
-                    required
-                    disabled={isCreating}
-                  />
+                  <div className="input-container">
+                    <input
+                      type="text"
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Enter task title..."
+                      required
+                      disabled={isCreating}
+                      className={`title-input ${
+                        titleValidation.isAvailable === true ? 'available' : 
+                        titleValidation.isAvailable === false ? 'unavailable' : ''
+                      }`}
+                    />
+                    {titleValidation.isChecking && (
+                      <div className="validation-spinner">⏳</div>
+                    )}
+                    {titleValidation.isAvailable === true && (
+                      <div className="validation-icon available">✓</div>
+                    )}
+                    {titleValidation.isAvailable === false && (
+                      <div className="validation-icon unavailable">✗</div>
+                    )}
+                  </div>
+                  {titleValidation.message && (
+                    <div className={`validation-message ${
+                      titleValidation.isAvailable === true ? 'success' : 
+                      titleValidation.isAvailable === false ? 'error' : ''
+                    }`}>
+                      {titleValidation.message}
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label htmlFor="description">Description</label>
@@ -120,7 +196,6 @@ const App: React.FC = () => {
               </form>
             </div>
 
-            {/* Task List */}
             <div className="task-list">
               <div className="task-list-header">
                 <h2>Recent Tasks</h2>
